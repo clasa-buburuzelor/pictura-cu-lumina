@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <!-- Disable pinch-zoom on tablets so the drawing doesn't get messed up -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <meta name="theme-color" content="#05050c">
+    <meta name="description" content="Pictează cu fire de lumină! Mișcă degetul pe ecran și privește cum se țes modele simetrice.">
+    <title>Pictură cu lumină</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✨</text></svg>">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <!-- The whole screen: drawing area, with the toolbars floating over its left and right edges -->
+    <div class="middle">
+
+        <!-- Left bar: light colors (a column of small circles) -->
+        <nav class="bar bar-colors" aria-label="Culori">
+            <div id="colors" class="group colors" role="radiogroup" aria-label="Culoarea luminii">
+                <!-- Color buttons are created from JavaScript (see js/main.js) -->
+            </div>
+        </nav>
+
+        <!-- Drawing area -->
+        <main id="drawArea" class="draw-area">
+            <!-- The canvas on which the light threads are woven -->
+            <canvas id="canvas" aria-label="Pânza de desen. Mișcă degetul ca să pictezi cu lumină."></canvas>
+
+            <!-- Symmetry guide: faint rays showing how the drawing repeats (shown briefly when the
+                 symmetry changes). Not part of the drawing and not included in the saved image. -->
+            <svg id="guide" class="guide" aria-hidden="true"></svg>
+
+            <!-- Start hint: disappears on first touch -->
+            <div id="hint" class="hint">
+                <span class="hint-hand">👆</span>
+                <span>Mișcă degetul pe ecran!</span>
+            </div>
+        </main>
+
+        <!-- Side toolbar: symmetry, clear and save. You can keep drawing underneath it. -->
+        <nav class="bar bar-side" aria-label="Unelte">
+
+            <!-- Rotational symmetry -->
+            <div class="group group-symmetry">
+                <p class="label" id="symmetryTitle">Simetrie de rotație</p>
+                <div id="symmetries" class="symmetries" role="radiogroup" aria-labelledby="symmetryTitle">
+                    <!-- Symmetry buttons are created from JavaScript (see js/main.js) -->
+                </div>
+                <!-- Shows the currently selected symmetry (e.g. "de ordinul 6") -->
+                <p id="symmetryName" class="symmetry-name" aria-live="polite"></p>
+            </div>
+
+            <!-- Actions (icons are SVG so they look the same on every device) -->
+            <div class="group actions">
+                <!-- Clear: a big white X on red, easy for kids to recognize -->
+                <button id="clearButton" class="button action clear" title="Șterge tot desenul" aria-label="Șterge tot desenul"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+                <!-- Save: the camera "takes a picture" of the drawing -->
+                <button id="saveButton" class="button action save" title="Salvează desenul" aria-label="Salvează desenul"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.5" r="3.5"/></svg></button>
+            </div>
+        </nav>
+    </div>
+
+    <!-- Confirmation dialog before clearing (kids may press the X by accident) -->
+    <div id="confirm" class="confirm hidden" role="dialog" aria-modal="true" aria-labelledby="confirmText">
+        <div class="box">
+            <p id="confirmText" class="confirm-text">Ștergem tot desenul?</p>
+            <div class="answers">
+                <button id="yesButton" class="button answer yes" aria-label="Da, șterge"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"/></svg></button>
+                <!-- "No" is a back arrow, so it can't be confused with the clear X -->
+                <button id="noButton" class="button answer no" aria-label="Nu, înapoi la desen"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-4"/></svg></button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/main.js"></script>
+</body>
+</html>

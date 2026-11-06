@@ -1,0 +1,496 @@
+/* ==========================================================
+   Light Painting — page styles
+   Designed for young kids: big buttons, bright colors, little text.
+   ========================================================== */
+
+/* --- Base interface colors --- */
+:root {
+    --background: #05050c;      /* the "night" on which the light threads glow */
+    --bar: rgba(255, 255, 255, 0.10);
+    --bar-border: rgba(255, 255, 255, 0.20);
+    --button: rgba(255, 255, 255, 0.14);
+    --button-pressed: rgba(255, 255, 255, 0.30);
+    --text: #ffffff;
+    --text-dim: rgba(255, 255, 255, 0.75);
+    --green: #2ecc71;
+    --red: #ff5a5f;
+    --blue: #5b8def;
+    /* button size: grows with the screen, but never too small for fingers */
+    --button-size: clamp(44px, min(4vw, 7vh), 60px);
+    /* there are more color buttons, so they are a bit smaller */
+    --color-size: clamp(22px, min(2vw, 3.6vh), 28px);
+}
+
+/* --- Simple reset --- */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html,
+body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;           /* no scrollbars */
+    background: var(--background);
+    color: var(--text);
+    font-family: "Comic Sans MS", "Chalkboard SE", "Segoe UI", system-ui, sans-serif;
+    /* Disable text selection and the long-press menu */
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* The page has two parts: colors on top, the drawing with its toolbar below */
+body {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    height: 100dvh;             /* on phones, account for the browser bar */
+}
+
+/* --- Middle: drawing area, with the toolbar floating over it --- */
+.middle {
+    position: relative;         /* the side bar is positioned relative to it */
+    flex: 1;
+    min-height: 0;
+    display: flex;
+}
+
+/* --- Drawing area: all remaining space --- */
+.draw-area {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* --- The canvas fills the drawing area (exact size is set from JavaScript) --- */
+#canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: block;
+    touch-action: none;         /* the finger draws instead of scrolling the page */
+    cursor: crosshair;
+}
+
+/* --- Symmetry guide: faint rays starting from the center --- */
+.guide {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;       /* touches pass through to the canvas */
+}
+
+.guide .ray {
+    stroke: rgba(255, 255, 255, 0.35);
+    stroke-width: 2;
+    stroke-dasharray: 6 10;
+    stroke-linecap: round;
+    opacity: 0;
+    transition: opacity 1.2s ease-out;
+}
+
+.guide.visible .ray {
+    opacity: 1;
+    transition: opacity 0.2s;
+}
+
+/* The center dot always stays, very faint: this is where the symmetry "starts" */
+.guide .center {
+    fill: rgba(255, 255, 255, 0.25);
+}
+
+/* --- Start hint --- */
+.hint {
+    position: absolute;
+    top: 45%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    font-size: clamp(24px, 5vw, 44px);
+    text-align: center;
+    pointer-events: none;       /* touches pass through to the canvas */
+    opacity: 0.9;
+    transition: opacity 0.6s;
+    text-shadow: 0 0 18px rgba(160, 200, 255, 0.6);
+}
+
+.hint-hand {
+    font-size: clamp(60px, 12vw, 110px);
+    animation: wander 2.2s ease-in-out infinite;
+}
+
+.hint.fade {
+    opacity: 0;
+}
+
+/* The hand "draws" a small loop in the air */
+@keyframes wander {
+    0%, 100% { transform: translate(0, 0) rotate(0deg); }
+    25%      { transform: translate(22px, 10px) rotate(8deg); }
+    50%      { transform: translate(0, 20px) rotate(0deg); }
+    75%      { transform: translate(-22px, 10px) rotate(-8deg); }
+}
+
+/* --- Toolbars --- */
+.bar {
+    flex-shrink: 0;
+    align-self: center;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    max-width: calc(100% - 16px);
+    padding: 10px 14px;
+    background: var(--bar);
+    border: 2px solid var(--bar-border);
+    border-radius: 28px;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 10;
+}
+
+/* Color bar: a thin column of small circles in the top-left corner,
+   floating OVER the drawing area (so the canvas center stays in the middle) */
+.bar-colors {
+    position: absolute;
+    top: 6px;
+    left: 8px;
+    max-width: none;
+    max-height: calc(100% - 12px);
+    padding: 10px 8px;
+    border-radius: 999px;
+}
+
+/* The circles are stacked one under another */
+.bar-colors .colors {
+    flex-direction: column;
+    flex-wrap: nowrap;
+}
+
+/* Side bar: a column of tools in the top-right corner, floating OVER the
+   drawing area, so kids can keep drawing underneath it */
+.bar-side {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    gap: 0;
+    padding: 10px;
+    max-width: none;
+    border-radius: 24px;
+}
+
+.group {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+}
+
+/* In the side bar, groups are stacked, separated by a line */
+.bar-side .group {
+    flex-direction: column;
+    flex-wrap: nowrap;
+}
+
+.bar-side .group + .group {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 2px solid var(--bar-border);
+}
+
+/* Clear and save buttons sit side by side */
+.bar-side .actions {
+    flex-direction: row;
+    gap: 8px;
+}
+
+/* Space between the color circles */
+.colors {
+    gap: 9px;
+}
+
+/* --- Small texts in the side bar --- */
+.label {
+    font-size: 13px;
+    line-height: 1.15;
+    text-align: center;
+    color: var(--text-dim);
+    max-width: calc(var(--button-size) * 2 + 8px);
+}
+
+.symmetry-name {
+    font-size: 13px;
+    line-height: 1.15;
+    text-align: center;
+    font-weight: bold;
+    min-height: 1.15em;
+}
+
+/* Symmetry buttons: a two-column grid */
+.symmetries {
+    display: grid;
+    grid-template-columns: repeat(2, var(--button-size));
+    gap: 8px;
+}
+
+/* --- Buttons in general --- */
+.button {
+    width: var(--button-size);
+    height: var(--button-size);
+    border: none;
+    border-radius: 50%;
+    background: var(--button);
+    color: var(--text);
+    font-size: 30px;
+    line-height: 1;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    transition: transform 0.12s, background 0.12s, box-shadow 0.12s;
+    touch-action: manipulation;
+}
+
+.button:hover {
+    background: var(--button-pressed);
+}
+
+.button:active {
+    transform: scale(0.88);
+}
+
+.button:focus-visible {
+    outline: 4px solid #fff;
+    outline-offset: 3px;
+}
+
+/* Clear button: white X on red */
+.button.clear {
+    background: var(--red);
+}
+
+.button.clear:hover {
+    background: #ff7a7e;
+}
+
+.clear .icon {
+    stroke-width: 3.4;
+}
+
+/* Save button: camera on blue */
+.button.save {
+    background: var(--blue);
+}
+
+.button.save:hover {
+    background: #7aa4f5;
+}
+
+/* Line icons (X, camera, check mark, back arrow) */
+.icon {
+    width: 55%;
+    height: 55%;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.answer .icon {
+    stroke-width: 3.2;
+}
+
+/* Short "flash" on the save button, so the child sees the picture was taken */
+.button.save.flash {
+    animation: flash 0.5s ease-out;
+}
+
+@keyframes flash {
+    0%   { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.9); background: #fff; color: var(--blue); }
+    100% { box-shadow: 0 0 0 18px rgba(255, 255, 255, 0); }
+}
+
+/* --- Symmetry buttons --- */
+.symmetry {
+    border: 3px solid transparent;
+}
+
+/* Symmetry icon: dots arranged in a circle, one for each repetition */
+.symmetry-icon {
+    width: 82%;
+    height: 82%;
+    overflow: visible;
+}
+
+.symmetry-icon .spoke {
+    stroke: rgba(255, 255, 255, 0.45);
+    stroke-width: 2;
+    stroke-linecap: round;
+}
+
+.symmetry-icon .dot {
+    fill: #fff;
+}
+
+.symmetry-icon .number {
+    fill: #fff;
+    font-size: 15px;
+    font-weight: bold;
+    font-family: inherit;
+}
+
+.symmetry-icon .number.small {
+    font-size: 10px;
+}
+
+/* Selected symmetry: white ring and a glow */
+.symmetry.active {
+    border-color: #fff;
+    background: var(--button-pressed);
+    box-shadow: 0 0 14px rgba(255, 255, 255, 0.45);
+}
+
+/* --- Color buttons --- */
+.color {
+    width: var(--color-size);
+    height: var(--color-size);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    /* each color "glows" in its own hue (--glow is set from JavaScript) */
+    box-shadow: 0 0 7px var(--glow, transparent);
+}
+
+.color:hover {
+    filter: brightness(1.15);
+}
+
+/* Selected color: thick white ring, slightly larger, strong glow */
+.color.active {
+    border-color: #fff;
+    transform: scale(1.25);
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.25), 0 0 14px 3px var(--glow, #fff);
+}
+
+.color.active:active {
+    transform: scale(1);
+}
+
+/* "Rainbow" button — the light changes color on its own */
+.color.rainbow {
+    background: conic-gradient(#ff4d4d, #ffb84d, #fff04d, #5dff4d, #4dd2ff, #6b4dff, #e14dff, #ff4d4d);
+    --glow: rgba(255, 255, 255, 0.6);
+}
+
+/* --- Confirmation dialog --- */
+.confirm {
+    position: fixed;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 20;
+}
+
+.confirm.hidden {
+    display: none;
+}
+
+.box {
+    padding: 28px 32px;
+    background: #1e1e36;
+    border: 3px solid var(--bar-border);
+    border-radius: 28px;
+    text-align: center;
+    animation: pop-in 0.2s ease-out;
+}
+
+@keyframes pop-in {
+    from { transform: scale(0.7); opacity: 0; }
+    to   { transform: scale(1);   opacity: 1; }
+}
+
+.confirm-text {
+    font-size: clamp(22px, 4.5vw, 34px);
+    margin-bottom: 22px;
+}
+
+.answers {
+    display: flex;
+    justify-content: center;
+    gap: 32px;
+}
+
+.answer {
+    width: 96px;
+    height: 96px;
+    font-size: 48px;
+    font-weight: bold;
+}
+
+.answer.yes { background: var(--green); }
+.answer.no  { background: var(--blue); }  /* blue means "back", not "delete" */
+
+/* --- Small screens (phones): slightly smaller buttons --- */
+@media (max-width: 720px) {
+    :root {
+        --button-size: 40px;
+        --color-size: 22px;
+    }
+
+    .bar {
+        gap: 8px;
+        padding: 8px;
+        border-radius: 20px;
+    }
+
+    .bar-colors {
+        top: 4px;
+        left: 6px;
+        padding: 8px 6px;
+        border-radius: 999px;
+    }
+
+    .colors {
+        gap: 7px;
+    }
+
+    .bar-side {
+        top: 4px;
+        right: 6px;
+        padding: 6px;
+    }
+
+    .symmetries,
+    .bar-side .actions {
+        gap: 6px;
+    }
+
+    .label,
+    .symmetry-name {
+        font-size: 11px;
+    }
+}
+
+/* --- Very short screens (small laptop window, landscape phone) --- */
+@media (max-height: 480px) {
+    :root {
+        --button-size: 38px;
+        --color-size: 20px;
+    }
+
+    .label {
+        display: none;          /* keep only the selected symmetry name */
+    }
+}
